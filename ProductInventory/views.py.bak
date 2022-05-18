@@ -1,0 +1,157 @@
+import imp
+from django.shortcuts import render
+from ProductInventory.models import *
+from rest_framework import generics
+from rest_framework import permissions
+from ProductInventory.serializers import *
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.views import APIView
+from django.http.multipartparser import MultiPartParser
+from rest_framework import viewsets, generics, status
+
+from django.http import JsonResponse
+
+
+
+
+# ProductCreateViewSet
+class ProductCreateViewSet(viewsets.ViewSet):
+    
+    def create(self, request):
+        try:
+            print(request.data)
+            # save into image gallery details serializer
+            image_gallery_details_serializer = ImageGalaryDetailsSerializer(data=request.data,context={"request": request})
+            image_gallery_details_serializer.is_valid(raise_exception=True)
+            image_gallery_details_serializer.save()
+            image_galary_details_id = image_gallery_details_serializer.data['image_galary_details_id']
+            # save hotel details info with image gallery details id into hotel details table
+
+            product_create_list = []
+            product_create_detail = {}
+
+            if request.data["name"] != '':
+                product_create_detail["name"] = request.data["name"]
+            else:
+                dict_response = {
+                    'error': True,
+                    'message': 'Product Name Required',
+                }
+                return Response(dict_response, status=status.HTTP_200_OK)
+
+            if request.data["meta"] != '':
+                product_create_detail["meta"] = request.data["meta"]
+            else:
+                dict_response = {
+                    'error': True,
+                    'message': 'Meta Required',
+                }
+                return Response(dict_response, status=status.HTTP_200_OK)
+            
+            #if request.data["category"] != '':
+            if request.data["categories"] != '':
+                product_create_detail["categories"] = request.data["categories"]
+            else:
+                dict_response = {
+                    'error': True,
+                    'message': 'category Required',
+                }
+                return Response(dict_response, status=status.HTTP_200_OK)
+            
+
+            if request.data["sub_categories"] != '' :
+                product_create_detail["sub_categories"] = request.data["sub_categories"]
+            else:
+                dict_response = {
+                    'error': True,
+                    'message': 'sub category Required',
+                }
+                return Response(dict_response, status=status.HTTP_200_OK)
+
+            
+
+
+            if request.data["descriptions"] != '':
+                product_create_detail["descriptions"] = request.data["descriptions"]
+            else:
+                dict_response = {
+                    'error': True,
+                    'message': 'Descriptions Required',
+                }
+                return Response(dict_response, status=status.HTTP_200_OK)
+
+            if request.data["alter_text"] != '':
+                product_create_detail["alter_text"] = request.data["alter_text"]
+            else:
+                dict_response = {
+                    'error': True,
+                    'message': 'Alter Text Required',
+                }
+                return Response(dict_response, status=status.HTTP_200_OK)
+
+
+            if request.data["slug"] != '':
+                product_create_detail["slug"] = request.data["slug"]
+            else:
+                dict_response = {
+                    'error': True,
+                    'message': 'slug Required',
+                }
+                return Response(dict_response, status=status.HTTP_200_OK)
+
+            if request.FILES["feature_image"] != '':
+                product_create_detail["feature_image"] = request.FILES["feature_image"]
+            else:
+                dict_response = {
+                    'error': True,
+                    'message': 'Image Required',
+                }
+                return Response(dict_response, status=status.HTTP_200_OK)
+
+
+
+        
+            product_create_detail["image_galary_details_id"] = image_galary_details_id
+            product_create_detail["is_active"] = True
+
+            product_create_list.append(product_create_detail)
+            product_create_serializer = ProductsSerializer(data=product_create_detail, context={"request": request})
+            product_create_serializer = CategoriesSerializers(data=product_create_detail, context={"request": request})
+            product_create_serializer = SubCategoriesSerializers(data=product_create_detail, context={"request": request})
+            product_create_serializer.is_valid(raise_exception=True)
+            product_create_serializer.save()
+
+            try:
+                images = request.FILES.getlist('image')
+                for image in list(images):
+                    image_list = []
+                    image_detail = {}
+
+                    if image != '':
+                        image_detail["Image"] = image
+                    else:
+                        dict_response = {
+                            'error': True,
+                            'message': 'Product Multiple image Required',
+                        }
+                        return Response(dict_response, status=status.HTTP_200_OK)
+                    # image_detail["Image"] = image
+                    image_detail["image_galary_details_id"] = image_galary_details_id
+                    image_list.append(image_detail)
+                    serializer = ImageSerializer(data=image_list, many=True, context={"request": request})
+                    serializer.is_valid(raise_exception=True)
+                    serializer.save()
+            except Exception as e:
+                print(str(e))
+
+            
+
+
+
+            dict_response = {"error": False, "message": "Product Information Save Successfully"}
+            return Response(dict_response, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            print(str(e))
+            dict_response = {"error": True, "message": f"{str(e)} Product Information Not Save.", 'data': ''}
+            return Response(dict_response, status=status.HTTP_400_BAD_REQUEST)
